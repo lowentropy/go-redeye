@@ -51,7 +51,7 @@ func Fib(n int) (int, error) {
 
 This definition is readable and looks like normal Go code. To make it
 have the same magical API-feel that the Coffeescript version does, this
-definition is parsed and converted using a [ruby script](scripts/compile.rb).
+definition is parsed and converted using a [ruby script](script/compile.rb).
 For instance, consider the following example:
 
 ```go
