@@ -139,10 +139,10 @@ func get(router *Router, cmd getCmd) {
 		cmd.ch <- value
 		return
 	}
+	wait(router, cmd)
 	if _, ok := router.active[cmd.key]; !ok {
 		work(router, cmd.key)
 	}
-	wait(router, cmd)
 }
 
 // finish sets the value of the given key. If any channels are waiting on
@@ -178,7 +178,9 @@ func work(router *Router, key key) {
 	body, ok := router.workers[key.prefix]
 	if !ok {
 		err := &redeyeError{key, "No runner for prefix"}
-		router.finish <- finishCmd{key, value{nil, err}}
+		go func() {
+			router.finish <- finishCmd{key, value{nil, err}}
+		}()
 	} else {
 		go func() {
 			data, err := body(key.args)
