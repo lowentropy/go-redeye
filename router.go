@@ -34,14 +34,14 @@ type redeyeError struct {
 // access for redeye workers. Its API communicates with a goroutine event loop
 // using channels.
 type Router struct {
-	data    map[key]value               // map from keys to values
-	waiters map[key]map[chan value]bool // list of channels waiting for each key
-	workers map[string]worker           // worker bodies defined per prefix
-	active  map[key]bool                // whether a worker exists for the key
-	sources map[key]map[key]bool        // map of sources of each key
-	get     chan getCmd                 // send get requests here
-	finish  chan finishCmd              // send finished keys here
-	quit    chan bool                   // send on here to quit the event loop
+	data    map[key]value        // map from keys to values
+	waiters map[key][]chan value // list of channels waiting for each key
+	workers map[string]worker    // worker bodies defined per prefix
+	active  map[key]bool         // whether a worker exists for the key
+	sources map[key][]key        // map of sources of each key
+	get     chan getCmd          // send get requests here
+	finish  chan finishCmd       // send finished keys here
+	quit    chan bool            // send on here to quit the event loop
 }
 
 // getCmd is a struct sent to the router's `get` channel to request
@@ -65,10 +65,10 @@ type finishCmd struct {
 func New() *Router {
 	router := new(Router)
 	router.data = make(map[key]value)
-	router.waiters = make(map[key]map[chan value]bool)
+	router.waiters = make(map[key][]chan value)
 	router.workers = make(map[string]worker)
 	router.active = make(map[key]bool)
-	router.sources = make(map[key]map[key]bool)
+	router.sources = make(map[key][]key)
 	router.get = make(chan getCmd)
 	router.finish = make(chan finishCmd)
 	router.quit = make(chan bool)
@@ -155,7 +155,7 @@ func finish(router *Router, cmd finishCmd) {
 		return
 	}
 	delete(router.waiters, cmd.key)
-	for ch, _ := range waiters {
+	for _, ch := range waiters {
 		ch <- cmd.value
 	}
 }
@@ -164,9 +164,10 @@ func finish(router *Router, cmd finishCmd) {
 // key to complete.
 func wait(router *Router, cmd getCmd) {
 	if _, ok := router.waiters[cmd.key]; !ok {
-		router.waiters[cmd.key] = make(map[chan value]bool)
+		router.waiters[cmd.key] = []chan value{cmd.ch}
+	} else {
+		router.waiters[cmd.key] = append(router.waiters[cmd.key], cmd.ch)
 	}
-	router.waiters[cmd.key][cmd.ch] = true
 }
 
 // work will look up the defined worker body for the given prefix.
@@ -197,9 +198,10 @@ func addLink(router *Router, src, tgt key) error {
 		return err
 	}
 	if _, ok := router.sources[tgt]; !ok {
-		router.sources[tgt] = make(map[key]bool)
+		router.sources[tgt] = []key{src}
+	} else {
+		router.sources[tgt] = append(router.sources[tgt], src)
 	}
-	router.sources[tgt][src] = true
 	return nil
 }
 
@@ -227,7 +229,7 @@ func checkCycle(router *Router, src, tgt key) error {
 		return nil
 	}
 	// recursively call for each dependency; return the first error
-	for dep, _ := range sources {
+	for _, dep := range sources {
 		if err := checkCycle(router, dep, tgt); err != nil {
 			return err
 		}
