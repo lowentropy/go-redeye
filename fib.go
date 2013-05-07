@@ -16,9 +16,8 @@ func defineFib(__router *Router) {
 		if n < 2 {
 			return 1, nil
 		}
-		f1, _ := Fib(__router, "Fib", __args, n - 1)
-		f2, _ := Fib(__router, "Fib", __args, n - 2)
+		f1, _ := Fib(__router, "Fib", __args, n-1)
+		f2, _ := Fib(__router, "Fib", __args, n-2)
 		return (f1 + f2), nil
 	})
 }
-

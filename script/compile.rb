@@ -1,3 +1,5 @@
+#! /usr/bin/env ruby
+
 class WorkerFile
 
   RE_FUNC = /^func ([a-z]+)\((.*)\) \((.*), error\) {$/i
@@ -69,25 +71,21 @@ class WorkerFile
       param_str = params.map { |(name,type)| "#{name} #{type}" }.join(', ')
       param_names = params.map { |p| p[0] }.join(', ')
       param_refs = params.map { |p| "&#{p[0]}" }.join(', ')
-      @lines << "func #{name}(router *Router, tgtPrefix, tgtArgs string, #{param_str}) (#{type}, error) {\n"
-      @lines << "\targs := fmt.Sprintf(\"#{(['%v'] * params.size).join(':')}\", #{param_names})\n"
-      @lines << "\tvalue, err := router.Get(\"#{name}\", args, tgtPrefix, tgtArgs)\n"
-      @lines << "\treturn value.(#{type}), err\n"
-      @lines << "}\n"
-      @lines << "\n"
-      @lines << "func define#{name}(__router *Router) {\n"
-      @lines << "\t__router.Define(\"#{name}\", func(__args string) (interface{}, error) {\n"
-      params.each do |(name, type)|
-        @lines << "\t\tvar #{name} #{type}\n"
-      end
-      @lines << "\t\tfmt.Sscanf(__args, \"#{(['%v'] * params.size).join(':')}\", #{param_refs})\n"
-      @lines << "\n"
-      body[1...-1].each do |line|
-        @lines << "\t#{line}"
-      end
-      @lines << "\t})\n"
-      @lines << "}\n"
-      @lines << "\n"
+      @lines << <<-go
+func #{name}(router *Router, tgtPrefix, tgtArgs string, #{param_str}) (#{type}, error) {
+  args := fmt.Sprintf(\"#{(['%v'] * params.size).join(':')}\", #{param_names})
+  value, err := router.Get(\"#{name}\", args, tgtPrefix, tgtArgs)
+  return value.(#{type}), err
+}
+
+func define#{name}(__router *Router) {
+  __router.Define(\"#{name}\", func(__args string) (interface{}, error) {
+    #{params.map {|(name, type)| "var #{name} #{type}"}.join "\t\t"}
+    fmt.Sscanf(__args, \"#{(['%v'] * params.size).join(':')}\", #{param_refs})
+
+#{body[1...-1].map {|line| "\t#{line}"}.join()}  })
+}
+      go
     end
   end
 
