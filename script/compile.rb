@@ -62,7 +62,7 @@ class WorkerFile
             line.gsub! "#{name}(#{inner})", "#{name}(__router, \"#{caller}\", __args, #{inner})"
           end
           if line =~ /^(\s*)([a-zA-Z_0-9]+) := (#{name}.*)$/
-            line.gsub! "#{$2} := #{$3}", "#{$2}, err := #{$3}\n#{$1}\tif err != nil {\n#{$1}\t\treturn nil, err\n#{$1}\t}\n"
+            line.gsub! "#{$2} := #{$3}", "#{$2}, err := #{$3}; if err != nil { return nil, err }"
           end
         end
       end
@@ -73,22 +73,20 @@ class WorkerFile
     @funcs.each do |name,(params,type,body)|
       param_str = params.map { |(name,type)| "#{name} #{type}" }.join(', ')
       param_names = params.map { |p| p[0] }.join(', ')
-      param_refs = params.map { |p| "&#{p[0]}" }.join(', ')
-      @lines << <<-go
-func #{name}(router *Router, tgtPrefix string, tgtArgs interface{}, #{param_str}) (#{type}, error) {
-  args := [#{params.size}]interface{}{#{param_names}}
-  value, err := router.Get(\"#{name}\", args, tgtPrefix, tgtArgs)
-  return value.(#{type}), err
-}
-
-func define#{name}(__router *Router) {
-  __router.Define(\"#{name}\", func(__args interface{}) (interface{}, error) {
-    __args_ary, _ := __args.([#{params.size}]interface{})
-    #{params.mapi {|(name, type), i| "#{name}, _ := __args_ary[#{i}].(#{type})"}.join "\t\t"}
-
-#{body[1...-1].map {|line| "\t#{line}"}.join()}  })
-}
+      head = "func define#{name}(__router *Router) {;" +
+             "__router.Define(\"#{name}\", func(__args interface{}) (interface{}, error) {;" +
+             "__args_ary, _ := __args.([#{params.size}]interface{});" +
+             (params.mapi {|(name, type), i| "#{name}, _ := __args_ary[#{i}].(#{type})"}.join) +
+             ";return func() (#{type}, error) {\n"
+      mid = body[1...-1].join#map { |line| "\t#{line}" }.join
+      tail = "}()})}\n\n" + <<-go
+            func #{name}(router *Router, tgtPrefix string, tgtArgs interface{}, #{param_str}) (#{type}, error) {
+              args := [#{params.size}]interface{}{#{param_names}}
+              value, err := router.Get(\"#{name}\", args, tgtPrefix, tgtArgs)
+              return value.(#{type}), err
+            }
       go
+      @lines << (head + mid + tail)
     end
   end
 
