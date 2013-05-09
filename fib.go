@@ -1,17 +1,15 @@
 package main
 
-import "fmt"
-
-func Fib(router *Router, tgtPrefix, tgtArgs string, n int) (int, error) {
-  args := fmt.Sprintf("%v", n)
+func Fib(router *Router, tgtPrefix string, tgtArgs interface{}, n int) (int, error) {
+  args := [1]interface{}{n}
   value, err := router.Get("Fib", args, tgtPrefix, tgtArgs)
   return value.(int), err
 }
 
 func defineFib(__router *Router) {
-  __router.Define("Fib", func(__args string) (interface{}, error) {
-    var n int
-    fmt.Sscanf(__args, "%v", &n)
+  __router.Define("Fib", func(__args interface{}) (interface{}, error) {
+    __args_ary, _ := __args.([1]interface{})
+    n, _ := __args_ary[0].(int)
 
 		if n < 2 {
 			return 1, nil

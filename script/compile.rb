@@ -12,7 +12,7 @@ class WorkerFile
 
   def compile
     @lines = File.readlines(@filename)
-    insert_fmt
+    # insert_fmt
     @lines.grep(RE_FUNC).each &method(:inspect_func)
     replace_calls
     insert_code
@@ -75,16 +75,16 @@ class WorkerFile
       param_names = params.map { |p| p[0] }.join(', ')
       param_refs = params.map { |p| "&#{p[0]}" }.join(', ')
       @lines << <<-go
-func #{name}(router *Router, tgtPrefix, tgtArgs string, #{param_str}) (#{type}, error) {
-  args := fmt.Sprintf(\"#{(['%v'] * params.size).join(':')}\", #{param_names})
+func #{name}(router *Router, tgtPrefix string, tgtArgs interface{}, #{param_str}) (#{type}, error) {
+  args := [#{params.size}]interface{}{#{param_names}}
   value, err := router.Get(\"#{name}\", args, tgtPrefix, tgtArgs)
   return value.(#{type}), err
 }
 
 func define#{name}(__router *Router) {
-  __router.Define(\"#{name}\", func(__args string) (interface{}, error) {
-    #{params.map {|(name, type)| "var #{name} #{type}"}.join "\t\t"}
-    fmt.Sscanf(__args, \"#{(['%v'] * params.size).join(':')}\", #{param_refs})
+  __router.Define(\"#{name}\", func(__args interface{}) (interface{}, error) {
+    __args_ary, _ := __args.([#{params.size}]interface{})
+    #{params.mapi {|(name, type), i| "#{name}, _ := __args_ary[#{i}].(#{type})"}.join "\t\t"}
 
 #{body[1...-1].map {|line| "\t#{line}"}.join()}  })
 }
@@ -107,6 +107,14 @@ func define#{name}(__router *Router) {
     unless @lines.grep(/"fmt"/).any?
       @lines[2,0] = ["import \"fmt\"\n", "\n"]
     end
+  end
+end
+
+class Array
+  def mapi
+    out = []
+    each_with_index { |v,i| out << yield(v, i) }
+    out
   end
 end
 

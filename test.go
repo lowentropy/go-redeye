@@ -9,15 +9,9 @@ func main() {
 	defineFib(router)
 	router.Start()
 
-	value, err := router.Get("Fib", "10", "seed", "")
+	num, err := Fib(router, "", nil, 10)
 	if err != nil {
 		fmt.Println("Error:", err)
-		return
-	}
-
-	num, ok := value.(int)
-	if !ok {
-		fmt.Println("Wrong format!")
 		return
 	}
 

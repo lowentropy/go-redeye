@@ -7,13 +7,14 @@ import (
 // worker defines how the body of a worker function should behave. It
 // should take a router object and argument string, and return a generic
 // value and optional error.
-type worker func(args string) (interface{}, error)
+type worker func(args interface{}) (interface{}, error)
 
 // key defines a unique key within the system. It consists of a prefix
 // that uniquely identifies a worker function, as well as a string of
 // combined arguments.
 type key struct {
-	prefix, args string
+	prefix string
+	args   interface{}
 }
 
 // value defines the result of a worker function, stored as the result
@@ -80,7 +81,7 @@ func New() *Router {
 // and optional error. The request will block until the value is available.
 // It does this by creating a response channel and sending it in a new getCommand
 // to the router; it then listens on the channel for the return value.
-func (router *Router) Get(srcPrefix, srcArgs, tgtPrefix, tgtArgs string) (interface{}, error) {
+func (router *Router) Get(srcPrefix string, srcArgs interface{}, tgtPrefix string, tgtArgs interface{}) (interface{}, error) {
 	src := key{srcPrefix, srcArgs}
 	tgt := key{tgtPrefix, tgtArgs}
 	if err := addLink(router, src, tgt); err != nil {
