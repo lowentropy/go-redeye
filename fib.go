@@ -4,8 +4,8 @@ func defineFib(__router *Router) {__router.Define("Fib", func(__args interface{}
 	if n < 2 {
 		return 1, nil
 	}
-	f1, err := Fib(__router, "Fib", __args, n - 1); if err != nil { return __zv, err }
-	f2, err := Fib(__router, "Fib", __args, n - 2); if err != nil { return __zv, err }
+	f1, __err := Fib(__router, "Fib", __args, n - 1); if __err != nil { return __zv, __err }
+	f2, __err := Fib(__router, "Fib", __args, n - 2); if __err != nil { return __zv, __err }
 	return f1 + f2, nil
 }()})}
 

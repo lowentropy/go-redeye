@@ -62,7 +62,7 @@ class WorkerFile
             line.gsub! "#{name}(#{inner})", "#{name}(__router, \"#{caller}\", __args, #{inner})"
           end
           if line =~ /^(\s*)([a-zA-Z_0-9]+) := (#{name}.*)$/
-            line.gsub! "#{$2} := #{$3}", "#{$2}, err := #{$3}; if err != nil { return __zv, err }"
+            line.gsub! "#{$2} := #{$3}", "#{$2}, __err := #{$3}; if __err != nil { return __zv, __err }"
           end
         end
       end
