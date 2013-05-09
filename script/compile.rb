@@ -62,7 +62,7 @@ class WorkerFile
             line.gsub! "#{name}(#{inner})", "#{name}(__router, \"#{caller}\", __args, #{inner})"
           end
           if line =~ /^(\s*)([a-zA-Z_0-9]+) := (#{name}.*)$/
-            line.gsub! "#{$2} := #{$3}", "#{$2}, err := #{$3}; if err != nil { return nil, err }"
+            line.gsub! "#{$2} := #{$3}", "#{$2}, err := #{$3}; if err != nil { return __zv, err }"
           end
         end
       end
@@ -73,8 +73,9 @@ class WorkerFile
     @funcs.each do |name,(params,type,body)|
       param_str = params.map { |(name,type)| "#{name} #{type}" }.join(', ')
       param_names = params.map { |p| p[0] }.join(', ')
-      head = "func define#{name}(__router *Router) {;" +
-             "__router.Define(\"#{name}\", func(__args interface{}) (interface{}, error) {;" +
+      head = "func define#{name}(__router *Router) {" +
+             "__router.Define(\"#{name}\", func(__args interface{}) (interface{}, error) {" +
+             "var __zv #{type};" +
              "__args_ary, _ := __args.([#{params.size}]interface{});" +
              (params.mapi {|(name, type), i| "#{name}, _ := __args_ary[#{i}].(#{type})"}.join) +
              ";return func() (#{type}, error) {\n"

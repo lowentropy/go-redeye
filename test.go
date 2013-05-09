@@ -9,7 +9,7 @@ func main() {
 	defineFib(router)
 	router.Start()
 
-	num, err := Fib(router, "", nil, &wat{10})
+	num, err := Fib(router, "", nil, 10)
 	if err != nil {
 		fmt.Println("Error:", err)
 		return

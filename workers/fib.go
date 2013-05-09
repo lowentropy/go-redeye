@@ -1,14 +1,10 @@
 package main
 
-type wat struct {
-	x int
-}
-
-func Fib(n *wat) (*wat, error) {
-	if n.x < 2 {
-		return &wat{1}, nil
+func Fib(n int) (int, error) {
+	if n < 2 {
+		return 1, nil
 	}
-	f1 := Fib(&wat{n.x - 1})
-	f2 := Fib(&wat{n.x - 2})
-	return &wat{f1.x + f2.x}, nil
+	f1 := Fib(n - 1)
+	f2 := Fib(n - 2)
+	return f1 + f2, nil
 }
