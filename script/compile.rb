@@ -77,8 +77,8 @@ class WorkerFile
              "__router.Define(\"#{name}\", func(__args interface{}) (interface{}, error) {" +
              "var __zv #{type};" +
              "__args_ary, _ := __args.([#{params.size}]interface{});" +
-             (params.mapi {|(name, type), i| "#{name}, _ := __args_ary[#{i}].(#{type})"}.join) +
-             ";return func() (#{type}, error) {\n"
+             (params.mapi {|(name, type), i| "#{name}, _ := __args_ary[#{i}].(#{type});"}.join) +
+             "return func() (#{type}, error) {\n"
       mid = body[1...-1].join#map { |line| "\t#{line}" }.join
       tail = "}()})}\n\n" + <<-go
             func #{name}(router *Router, tgtPrefix string, tgtArgs interface{}, #{param_str}) (#{type}, error) {
