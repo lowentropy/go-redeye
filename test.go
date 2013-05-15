@@ -15,7 +15,7 @@ func main() {
 		return
 	}
 
-	fmt.Println("Fib(10):", num, "\n")
+	fmt.Println("Fib(10):", num)
 
 	for key, value := range router.data {
 		fmt.Println(key, "=", value)
